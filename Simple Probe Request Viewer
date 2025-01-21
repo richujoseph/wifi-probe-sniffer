@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WiFi Probe Request Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .start {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .stop {
+            background-color: #f44336;
+            color: white;
+        }
+        #probeList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        #probeList li {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        #probeList li:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>WiFi Probe Request Monitor</h1>
+        <div class="controls">
+            <button class="start" id="startBtn">Start Sniffing</button>
+            <button class="stop" id="stopBtn">Stop Sniffing</button>
+        </div>
+        <h2>Detected Probe Requests:</h2>
+        <ul id="probeList"></ul>
+    </div>
+
+    <script>
+        const socket = io('http://localhost:5000');
+        const probeList = document.getElementById('probeList');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
+        socket.on('new_probe', (data) => {
+            const li = document.createElement('li');
+            li.textContent = `[${new Date().toLocaleTimeString()}] ${data.network}`;
+            probeList.insertBefore(li, probeList.firstChild);
+        });
+
+        startBtn.addEventListener('click', () => {
+            socket.emit('start_sniffing', (response) => {
+                if (response.status === 'error') {
+                    alert(response.message);
+                }
+            });
+        });
+
+        stopBtn.addEventListener('click', () => {
+            socket.emit('stop_sniffing');
+        });
+
+        // Load existing probes when page loads
+        fetch('http://localhost:5000/api/probes')
+            .then(response => response.json())
+            .then(probes => {
+                probes.forEach(probe => {
+                    const li = document.createElement('li');
+                    li.textContent = probe;
+                    probeList.appendChild(li);
+                });
+            });
+    </script>
+</body>
+</html>
