@@ -2,6 +2,19 @@
 
 A simple tool to monitor WiFi probe requests using Python and Scapy.
 
+## Table of Contents
+
+- [Requirements](#requirements)
+
+- [Installation](#installation)
+
+- [Usage](#usage)
+
+- [Important Notes](#important-notes)
+
+- [License](#license)
+
+
 ## Requirements
 
 - Python 3.x
@@ -25,7 +38,9 @@ pip install scapy flask flask-socketio flask-cors
 
 1. Enable monitor mode on your wireless interface:
 ```bash
-sudo airmon-ng start wlan0
+sudo ifconfig wlan0 down
+sudo iwconfig wlan0 mode monitor
+sudo ifconfig wlan0 up
 ```
 
 2. Run the backend server (requires sudo):
