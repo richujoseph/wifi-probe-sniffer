@@ -26,7 +26,7 @@ A simple tool to monitor WiFi probe requests using Python and Scapy.
 1. Clone the repository:
 ```bash
 git clone https://github.com/richujoseph/wifi-probe-sniffer.git
-cd wifi-probe-monitor
+cd wifi-probe-sniffer
 ```
 
 2. Install requirements:
