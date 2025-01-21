@@ -1,0 +1,55 @@
+# probe_sniffer.py
+from scapy.all import *
+import os
+from flask import Flask, jsonify
+from flask_socketio import SocketIO
+from flask_cors import CORS
+import threading
+
+app = Flask(__name__)
+CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+interface = 'wlan0'
+probeReqs = set()
+is_running = False
+
+def sniffProbes(p):
+    if p.haslayer(Dot11ProbeReq):
+        netName = p.getlayer(Dot11ProbeReq).info
+        if netName:
+            netNameStr = netName.decode('utf-8', errors='ignore').strip()
+            if netNameStr and netNameStr not in probeReqs:
+                probeReqs.add(netNameStr)
+                print('[+] Detected New Probe Request: ' + netNameStr)
+                # Emit the new probe request to connected clients
+                socketio.emit('new_probe', {'network': netNameStr})
+
+def start_sniffing():
+    global is_running
+    is_running = True
+    print("[*] Starting probe request sniffing. Press Ctrl+C to stop.")
+    sniff(iface=interface, prn=sniffProbes, store=0, stop_filter=lambda _: not is_running)
+
+@app.route('/api/probes')
+def get_probes():
+    return jsonify(list(probeReqs))
+
+@socketio.on('start_sniffing')
+def handle_start():
+    if not os.path.exists(f'/sys/class/net/{interface}'):
+        return {'status': 'error', 'message': f"Error: Interface {interface} not found."}
+    
+    if not is_running:
+        threading.Thread(target=start_sniffing).start()
+        return {'status': 'success'}
+    return {'status': 'error', 'message': 'Already running'}
+
+@socketio.on('stop_sniffing')
+def handle_stop():
+    global is_running
+    is_running = False
+    return {'status': 'success'}
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
